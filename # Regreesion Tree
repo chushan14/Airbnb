@@ -1,0 +1,36 @@
+
+# Regreesion Tree
+library(rpart) #for fitting decision trees
+library(rpart.plot) #for plotting decision trees
+
+set.seed(1)
+train_rows <- sample(nrow(training),.7*nrow(training))
+data_train <- training[train_rows,]
+data_valid <- training[-train_rows,]
+
+
+tree <- rpart(Review_Scores_Rating ~ ., data=data_train, control=rpart.control(cp=.0001))
+
+#view results
+printcp(tree)
+
+#identify best cp value to use
+best <- tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"]
+
+#produce a pruned tree based on the best cp value
+pruned_tree <- prune(tree, cp=best)
+
+#use pruned tree to predict salary of this player
+pred <- predict(pruned_tree, newdata=data_valid)
+
+library(Metrics)
+rmse(pred, data_valid$Review_Scores_Rating)
+MAE(pred, data_valid$Review_Scores_Rating)
+mse(pred, data_valid$Review_Scores_Rating)
+rsq <- function(x, y) summary(lm(y~x))$r.squared
+rsq(pred, data_valid$Review_Scores_Rating)
+
+# rmse 9.826501
+# MAE 3.092135
+# mse 96.56013
+# rsq 0.9542007
