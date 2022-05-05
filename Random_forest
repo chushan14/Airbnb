@@ -2,16 +2,26 @@
 
 library(randomForest)
 
-rffit <- randomForest(review_scores_rating ~ recent_review+reviews_per_month+x24_hour_check_in+host_is_superhost
-                      +is_apartment+is_house+host_response_rate+availability_365+minimum_nights+price+indoor_fireplace
-                      +condo+accommodates+host_total_listings_count+venice_neighbourhood+townhouse+loft+guesthouse+
-                        sharedroom+bathrooms+lock_on_bedroom_door+privateroom+santa_monica_neighbourhood+bedrooms
-                      +elevator_in_building+long_beach_neighbourhood+maximum_nights+number_of_reviews, data = training, importance = TRUE, na.action=na.omit, ntree = 50)
+rffit <- randomForest(review_scores_rating ~ host_is_superhost+sharedroom+ availability_365+ is_apartment+
+                      host_total_listings_count+ price+ accommodates+ host_response_rate+maximum_nights+indoor_fireplace+
+                      lock_on_bedroom_door+ recent_review+ number_of_reviews+ minimum_nights+ long_beach_neighbourhood+ pool+
+                      hollywood_neighbourhood+ loft+ guesthouse+ reviews_per_month+ bathrooms +condo+santa_monica_neighbourhood+bedrooms, data = training, importance = TRUE, na.action=na.omit, ntree = 50)
+
+
+# rffit_1 <- randomForest(review_scores_rating ~ recent_review, data = training_nonzero, importance = TRUE, na.action=na.omit, ntree = 50)
+# rffit_2 <- randomForest(review_scores_rating ~ x24_hour_check_in, data = training, importance = TRUE, na.action=na.omit, ntree = 50)
+# rffit_3 <- randomForest(review_scores_rating ~ host_is_superhost, data = training, importance = TRUE, na.action=na.omit, ntree = 50)
+
+# plot(training$recent_review, training$review_scores_rating)
+# hist(training$review_scores_rating)
+
+
 plot(rffit)
 print(rffit)
 varImpPlot(rffit)
 #predict on the training data for training dataset
 predict_train_rf=predict(rffit, training)
+
 
 
 #R square, MAE, MSE, RMSE
@@ -21,8 +31,7 @@ MSE(predict_train_rf,training$review_scores_rating)
 RMSE(predict_train_rf,training$review_scores_rating)
 
 
-
-#check testing data
+#predict on testing data
 predict_test_rf=predict(rffit, test)
 
 #R square, MAE, MSE, RMSE
