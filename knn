@@ -1,0 +1,27 @@
+# KNN 
+library(class)
+
+
+#X 
+trainknn = cbind(LA_sample$host_is_superhost, LA_sample$sharedroom, LA_sample$availability_365, LA_sample$is_apartment,
+                 LA_sample$host_total_listings_count, LA_sample$price, LA_sample$accommodates, LA_sample$host_response_rate, LA_sample$maximum_nights, LA_sample$indoor_fireplace,
+                 LA_sample$lock_on_bedroom_door, LA_sample$recent_review, LA_sample$number_of_reviews, LA_sample$minimum_nights, LA_sample$long_beach_neighbourhood, LA_sample$pool,
+                 LA_sample$hollywood_neighbourhood, LA_sample$loft, LA_sample$guesthouse, LA_sample$reviews_per_month, LA_sample$bathrooms, LA_sample$condo, LA_sample$santa_monica_neighbourhood, LA_sample$bedrooms)
+
+testknn = cbind(LA_sample$host_is_superhost, LA_sample$sharedroom, LA_sample$availability_365, LA_sample$is_apartment,
+                LA_sample$host_total_listings_count, LA_sample$price, LA_sample$accommodates, LA_sample$host_response_rate, LA_sample$maximum_nights, LA_sample$indoor_fireplace,
+                LA_sample$lock_on_bedroom_door, LA_sample$recent_review, LA_sample$number_of_reviews, LA_sample$minimum_nights, LA_sample$long_beach_neighbourhood, LA_sample$pool,
+                LA_sample$hollywood_neighbourhood, LA_sample$loft, LA_sample$guesthouse, LA_sample$reviews_per_month, LA_sample$bathrooms, LA_sample$condo, LA_sample$santa_monica_neighbourhood, LA_sample$bedrooms)
+
+#Y:
+cl = training$review_score_rating
+cl_test = test$review_score_rating
+
+#knn
+err_by_k = rep(0, 10)
+for(k in 1:10) {
+  res = knn(train, train, cl, k = k, prob=TRUE)
+  err_by_k[k] = sum(abs(as.numeric(res)-1-cl))
+}
+cbind(seq(1,10), err_by_k)
+
