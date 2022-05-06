@@ -1,0 +1,41 @@
+training<-training[,c("review_scores_rating","host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                      "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                      "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                      "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+#i added this to make sure both training and test had the same variables. They did not match before and it was causing issues.
+test <- test[,c("review_scores_rating","host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+############## knn regression ############
+library(caret)
+
+#x
+trainknn = cbind(training$host_is_superhost, training$sharedroom, training$availability_365, training$is_apartment,
+                 training$host_total_listings_count, training$price, training$accommodates, training$host_response_rate, training$maximum_nights, training$indoor_fireplace,
+                 training$lock_on_bedroom_door, training$recent_review, training$number_of_reviews, training$minimum_nights, training$long_beach_neighbourhood, training$pool,
+                 training$hollywood_neighbourhood, training$loft, training$guesthouse, training$reviews_per_month, training$bathrooms, training$condo, training$santa_monica_neighbourhood, training$bedrooms)
+
+testknn = cbind(test$host_is_superhost, test$sharedroom, test$availability_365, test$is_apartment,
+                test$host_total_listings_count, test$price, test$accommodates, test$host_response_rate, test$maximum_nights, test$indoor_fireplace,
+                test$lock_on_bedroom_door, test$recent_review, test$number_of_reviews, test$minimum_nights, test$long_beach_neighbourhood, test$pool,
+                test$hollywood_neighbourhood, test$loft, test$guesthouse, test$reviews_per_month, test$bathrooms, test$condo, test$santa_monica_neighbourhood, test$bedrooms)
+
+#Y:
+yreg = training$review_score_rating
+yreg_test = test$review_score_rating
+
+knnmodel = knnreg(trainknn, as.numeric(yreg))
+str(knnmodel)
+
+pred_y = predict(knnmodel, data.frame(testknn)) #error is here
+
+
+mse = mean((yreg_test - pred_y)^2)
+mae = caret::MAE(yreg_test, pred_y)
+rmse = caret::RMSE(yreg_test, pred_y)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+
