@@ -1,0 +1,33 @@
+#knn
+trainknn_1= training[,c("host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                        "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                        "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                        "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+
+testknn_1 =test[,c("host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                   "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                   "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                   "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+
+
+#Y:
+
+colnames(training)
+colnames(test)
+yreg = as.numeric(training[,1])
+yreg_test = as.numeric(test[,12])
+
+knnmodel = knnreg(trainknn_1,yreg)
+str(knnmodel)
+
+pred_y = predict(knnmodel, testknn_1) #error is here
+
+library(caret)
+R2(pred_y,yreg_test,form="traditional")
+mse = mean((yreg_test - pred_y)^2)
+mae = caret::MAE(yreg_test, pred_y)
+rmse = caret::RMSE(yreg_test, pred_y)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
