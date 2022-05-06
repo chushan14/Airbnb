@@ -1,0 +1,227 @@
+library(readr)
+library(dplyr)
+library(lubridate)
+library(tidyverse)
+LA <- read.csv("LA_Listings(1).csv")
+summary(LA)
+
+LA$Street <- as.factor(LA$Street)
+LA$City <- as.factor(LA$City)
+LA$Amenities <-as.factor(LA$Amenities)
+LA$Property_type<- as.factor(LA$Property_type)
+LA$Room_type<- as.factor(LA$Room_type)
+LA$Country<- as.factor(LA$Country)
+LA$State<- as.factor(LA$State)
+LA$Neighbourhood_cleansed<- as.factor(LA$Neighbourhood_cleansed)
+
+#format the date
+LA$Calendar_last_scraped<-mdy(LA$Calendar_last_scraped)
+LA$Last_Review_Date <-mdy(LA$Last_Review_Date)
+
+#Dummy coded
+LA$Host_Is_Superhost <- ifelse(LA$Host_Is_Superhost == "TRUE", 1,0)
+
+#transfer NA into mean/median of the variables
+LA$Host_Response_Rate <- ifelse(is.na(LA$Host_Response_Rate), mean(LA$Host_Response_Rate,na.rm=TRUE),LA$Host_Response_Rate)
+LA$Host_total_listings_count <- ifelse(is.na(LA$Host_total_listings_count), median(LA$Host_total_listings_count,na.rm=TRUE),LA$Host_total_listings_count)
+LA$Accommodates <-ifelse(is.na(LA$Accommodates), median(LA$Accommodates,na.rm=TRUE),LA$Accommodates)
+LA$Bathrooms <-ifelse(is.na(LA$Bathrooms), median(LA$Bathrooms,na.rm=TRUE),LA$Bathrooms)
+LA$Bedrooms <-ifelse(is.na(LA$Bedrooms), median(LA$Bedrooms,na.rm=TRUE),LA$Bedrooms)
+LA$Maximum_nights <-ifelse(is.na(LA$Maximum_nights), median(LA$Maximum_nights,na.rm=TRUE),LA$Maximum_nights)
+
+#drop some NA
+LA<- LA %>% drop_na(Neighbourhood_cleansed)
+
+#Create new variables
+LA$Is_Apartment <- ifelse(LA$Property_type=="Apartment",1,0)
+LA$Is_House <- ifelse(LA$Property_type=="House",1,0)
+LA$condo <- ifelse(LA$Property_type=="Condominium",1,0)
+LA$Townhouse <- ifelse(LA$Property_type=="Townhouse",1,0)
+LA$Loft<- ifelse(LA$Property_type=="Loft",1,0)
+LA$Guesthouse<- ifelse(LA$Property_type=="Guesthouse",1,0) 
+LA$entirehouse <- ifelse(LA$Room_type=="Entire home/apt",1,0)
+LA$privateroom <- ifelse(LA$Room_type=="Private room",1,0) 
+LA$sharedroom <- ifelse(LA$Room_type=="Shared room",1,0)
+LA$Hollywood_Neighbourhood <- ifelse(LA$Neighbourhood_cleansed=="Hollywood",1,0) 
+LA$Venice_Neighbourhood <- ifelse(LA$Neighbourhood_cleansed=="Venice",1,0) 
+LA$LongBeach_Neighbourhood <- ifelse(LA$Neighbourhood_cleansed=="Long Beach",1,0) 
+LA$Downtown_Neighbourhood <- ifelse(LA$Neighbourhood_cleansed=="Downtown",1,0) 
+LA$SantaMonica_Neighbourhood <- ifelse(LA$Neighbourhood_cleansed=="Santa Monica",1,0) 
+LA$Recent_Review <-ifelse(is.na(LA$Last_Review_Date),as.Date("2020-12-31")-as.Date("2017-04-30"),as.Date("2020-12-31")-LA$Last_Review_Date)
+
+summary(LA) 
+
+
+#number of columns after splitting by space, find top5 amenities
+Amenities<-data.frame(LA$Amenities)
+colnames(Amenities)
+install.packages('splitstackshape')
+library(splitstackshape)
+Amenities_2<-cSplit(Amenities, "LA.Amenities", ";")
+colnames(Amenities_2)
+Amenities_3<-Amenities_2 %>% gather(col,amenities,LA.Amenities_01:LA.Amenities_45,na.rm = T)
+Amenities_3$amenities<-tolower(Amenities_3$amenities)
+Amenities_3<-Amenities_3 %>% count(amenities)
+Amenities_3<-Amenities_3[order(Amenities_3$n,decreasing = T),]
+head(Amenities_3)
+
+#find "24-hour check-in", "indoor fireplace", "lock on bedroom door", "pool", "elevator in building" in the LA dataset amenities
+Amenities_list = c("24-hour check-in", "indoor fireplace", "lock on bedroom door", "pool", "elevator in building")
+for (i in 1:length(Amenities_list)){
+  LA[Amenities_list[i]]<-ifelse(grepl(Amenities_list[i],LA$Amenities,ignore.case = TRUE),1,0)
+}
+head(LA)
+
+#create a subset for modeling
+LA_sample<-LA[,c("Host_Response_Rate","Host_Is_Superhost","Host_total_listings_count","Accommodates","Bathrooms","Bedrooms","Price","Minimum_nights","Maximum_nights","Availability_365",
+                 "Number_of_reviews","Review_Scores_Rating","Review_Scores_Accuracy",
+                 "Review_Scores_Cleanliness","Review_Scores_Checkin","Review_Scores_Communication","Review_Scores_Location",
+                 "Review_Scores_Value","Reviews_per_month","Is_Apartment","Is_House","condo","Townhouse","Loft","Guesthouse",
+                 "Hollywood_Neighbourhood","Venice_Neighbourhood","LongBeach_Neighbourhood","Downtown_Neighbourhood","SantaMonica_Neighbourhood",
+                 "entirehouse","privateroom","sharedroom","Recent_Review","24-hour check-in", "indoor fireplace", "lock on bedroom door", "pool", "elevator in building")]
+
+summary(LA_sample) 
+#totally 39 variables
+
+#deal with too many 0 in rating
+hist(LA_sample$Review_Scores_Rating)
+LA_sample<-LA_sample[LA_sample$Number_of_reviews!=0&LA_sample$Review_Scores_Rating!=0,]
+
+
+#Set training and testing dataset
+
+install.packages("caret")
+library(caret)
+set.seed(13343)
+
+train_ind <- createDataPartition(y = LA_sample$Review_Scores_Rating,p=.8,list = FALSE)
+training <- LA_sample[train_ind,]
+test <- LA_sample[-train_ind,]
+
+#see correlation and check collinearity
+colnames(training)
+summary(training)
+training_t<-training
+training_t[] <- lapply(training_t, as.numeric)
+correlation<-data.frame(cor(training_t))
+
+
+hist(LA_sample$Review_Scores_Rating)
+class(LA_sample$Review_Scores_Rating)
+typeof(LA_sample$Review_Scores_Rating)
+
+
+#delete review "Review_Scores_Value","Review_Scores_Accuracy","Review_Scores_Cleanliness","Review_Scores_Checkin","Review_Scores_Communication","Review_Scores_Location" and entire_house
+# training<-training[,-which(names(training) %in% c("Review_Scores_Value",
+#                                                   "Review_Scores_Accuracy",
+#                                                   "Review_Scores_Cleanliness",
+#                                                   "Review_Scores_Checkin",
+#                                                   "Review_Scores_Communication",
+#                                                   "Review_Scores_Location",
+#                                                   "entirehouse"))]
+# 
+# test<-test[,-which(names(test) %in% c("Review_Scores_Value",
+#                                       "Review_Scores_Accuracy",
+#                                       "Review_Scores_Cleanliness",
+#                                       "Review_Scores_Checkin",
+#                                       "Review_Scores_Communication",
+#                                       "Review_Scores_Location",
+#                                       "entirehouse"))]
+#
+
+install.packages("janitor")
+library(janitor)
+
+
+training<-training %>% clean_names()
+test<-test %>% clean_names()
+
+colnames(training)
+colnames(test)
+
+#variable selection using Forward-stepwise regression
+library(lars)
+y = training$review_scores_rating
+x = training[,-which(names(training)%in%"review_scores_rating")]
+x_t<-as.matrix(x)
+res = lars(x_t, y, type="stepwise")
+print(summary(res))
+res
+
+#cp=24.038 24 variables included, which are host_is_superhost, sharedroom, availability_365, is_apartment,
+#host_total_listings_count, price accommodates, host_response_rate,maximum_nights, indoor_fireplace,
+#lock_on_bedroom_door, recent_review, number_of_reviews, minimum_nights, long_beach_neighbourhood, pool,
+#hollywood_neighbourhood, loft, guesthouse, reviews_per_month, bathrooms, condo, santa_monica_neighbourhood, bedrooms
+
+#add review_scores_rating also. total 25 variables
+
+colnames(training)
+training<-training[,c("review_scores_rating","host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                      "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                      "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                      "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+
+test <- test[,c("review_scores_rating","host_is_superhost","sharedroom", "availability_365", "is_apartment",
+                    "host_total_listings_count", "price", "accommodates", "host_response_rate","maximum_nights", "indoor_fireplace",
+                    "lock_on_bedroom_door", "recent_review", "number_of_reviews", "minimum_nights", "long_beach_neighbourhood", "pool",
+                    "hollywood_neighbourhood", "loft", "guesthouse", "reviews_per_month", "bathrooms", "condo", "santa_monica_neighbourhood","bedrooms")]
+
+
+#standard multiple regression 
+
+cl = training$review_scores_rating
+cl_test = test$review_scores_rating
+
+res1 = lm(review_scores_rating ~ host_is_superhost+sharedroom+ availability_365+ is_apartment+
+            host_total_listings_count+ price+ accommodates+ host_response_rate+maximum_nights+indoor_fireplace+
+            lock_on_bedroom_door+ recent_review+ number_of_reviews+ minimum_nights+ long_beach_neighbourhood+ pool+
+            hollywood_neighbourhood+ loft+ guesthouse+ reviews_per_month+ bathrooms +condo+santa_monica_neighbourhood+bedrooms,
+            data = training)
+
+summary(res1)
+
+reg_pred = predict(res1, newdata = training)
+
+
+
+install.packages("mltools")
+install.packages("Metrics")
+library(mltools)
+library(Metrics)
+
+mltools::R2(reg_pred,training$review_scores_rating,form="traditional")
+mltools::mae(reg_pred,training$review_scores_rating)
+mltools::mse(reg_pred,training$review_scores_rating)
+mltools::rmse(reg_pred,training$review_scores_rating)
+
+#TRAINING
+#Multiple R-squared:  0.09036,	
+# Adjusted R-squared:  0.08921 
+# MSE 58.21413
+# RMSE 7.629819
+
+#Test
+
+cl = training$review_scores_rating
+cl_test = test$review_scores_rating
+
+res2 = lm(review_scores_rating ~ host_is_superhost+sharedroom+ availability_365+ is_apartment+
+            host_total_listings_count+ price+ accommodates+ host_response_rate+maximum_nights+indoor_fireplace+
+            lock_on_bedroom_door+ recent_review+ number_of_reviews+ minimum_nights+ long_beach_neighbourhood+ pool+
+            hollywood_neighbourhood+ loft+ guesthouse+ reviews_per_month+ bathrooms +condo+santa_monica_neighbourhood+bedrooms,
+          data = test)
+
+summary(res2)
+reg_pred2 = predict(res2, newdata = test)
+
+mltools::R2(reg_pred2,test$review_scores_rating,form="traditional")
+mltools::mae(reg_pred2,test$review_scores_rating)
+mltools::mse(reg_pred2,test$review_scores_rating)
+mltools::rmse(reg_pred2,test$review_scores_rating)
+#Test 
+#Multiple R-squared:  0.09036
+#Adjusted R-squared:  0.08921 
+# MSE 60.25782
+# RMSE 7.762591
+
