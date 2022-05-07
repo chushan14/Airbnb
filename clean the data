@@ -155,7 +155,7 @@ res = lars(x_t, y, type="stepwise")
 print(summary(res))
 res
 
-#cp=23.282 23 variables included, which are review_scores_accuracy, review_scores_communication,
+#cp=24.082 23 variables included, which are review_scores_accuracy, review_scores_communication,
 #host_is_superhost,review_scores_location, host_total_listings_count, number_of_reviews,
 #is_apartment, price, accommodates, pool, privateroom, availability_365, review_scores_checkin,
 #hollywood_neighbourhood, minimum_nights, host_response_rate, lock_on_bedroom_door, loft, x24_hour_check_in
