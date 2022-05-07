@@ -138,9 +138,9 @@ training_t<-training
 training_t[] <- lapply(training_t, as.numeric)
 correlation<-data.frame(cor(training_t))
 
-#delete "review_scores_value","review_scores_cleanliness","bedrooms","bathrooms"
-training<-training[,-which(names(training) %in% c( "review_scores_value","review_scores_cleanliness","bedrooms","bathrooms"))]
-test<-test[,-which(names(test) %in% c("review_scores_value","review_scores_cleanliness","bedrooms","bathrooms"))]
+#delete "review_scores_value","review_scores_cleanliness","bedrooms","bathrooms","is_house"
+training<-training[,-which(names(training) %in% c( "review_scores_value","review_scores_cleanliness","bedrooms","bathrooms","is_house"))]
+test<-test[,-which(names(test) %in% c("review_scores_value","review_scores_cleanliness","bedrooms","bathrooms","is_house"))]
 colnames(training)
 
 
