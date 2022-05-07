@@ -24,13 +24,16 @@ testknn = cbind(test$host_is_superhost, test$sharedroom, test$availability_365, 
                 test$hollywood_neighbourhood, test$loft, test$guesthouse, test$reviews_per_month, test$bathrooms, test$condo, test$santa_monica_neighbourhood, test$bedrooms)
 
 #Y:
-yreg = training$review_score_rating
-yreg_test = test$review_score_rating
+#yreg <- training$review_score_rating
+#yreg_test = test$review_score_rating
 
-knnmodel = knnreg(trainknn, as.numeric(yreg))
+yreg = as.numeric(training[,1])
+yreg_test = as.numeric(test[,12])
+
+knnmodel = knnreg(trainknn, yreg)
 str(knnmodel)
 
-pred_y = predict(knnmodel, data.frame(testknn)) #error is here
+pred_y = predict(knnmodel, testknn) 
 
 
 mse = mean((yreg_test - pred_y)^2)
@@ -39,3 +42,4 @@ rmse = caret::RMSE(yreg_test, pred_y)
 
 cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
 
+R2(pred_y,yreg_test,form="traditional")
