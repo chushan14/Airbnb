@@ -1,0 +1,61 @@
+#GBM 
+#tuned gbm 
+#tuned gbm
+library(gbm)
+library(caret)
+
+#First attempt
+#tuneGrid = expand.grid(n.trees = 100, 
+#                       interaction.depth = c(2,3),
+#                      shrinkage = (1:100)*0.001,
+#                      n.minobsinnode=c(15))
+
+#USE BEST tune to tune 
+#cvModel$bestTune$interaction.depth
+#$bestTune$shrinkage
+#cvModel$bestTune$n.minobsinnode
+
+#underneath is to run the best parameter 
+set.seed(13343)
+trControl = trainControl(method="cv",number=5)
+tuneGrid = expand.grid(n.trees = 500, #500 notes -branches 
+                       interaction.depth = c(3), # 3 layers 
+                       shrinkage = (1:100)*0.001, # 1-100 ways, every way x 0.001. = 0.001 runs to 0.1 
+                       n.minobsinnode=c(10,15)) #10 or 15 the rial of a branch each branch least have 10 or 15 data points 
+
+#run the trainning model into cvmodel
+garbage = capture.output(cvModel <- train(review_scores_rating~.,    #avoid the review too messy
+                                          data=training,
+                                          method="gbm",
+                                          trControl=trControl, 
+                                          tuneGrid=tuneGrid))  
+
+#######
+
+set.seed(13343)
+cvboost = gbm(review_scores_rating~.,
+              data=training,
+              distribution="gaussian",
+              n.trees=500,
+              interaction.depth=cvModel$bestTune$interaction.depth,   #call out the best parameter of cvmodel by function bestTune 
+              shrinkage=cvModel$bestTune$shrinkage,
+              n.minobsinnode = cvModel$bestTune$n.minobsinnode)
+
+#know which is the best parameter
+cvModel$bestTune$interaction.depth
+cvModel$bestTune$shrinkage
+cvModel$bestTune$n.minobsinnode
+
+#Now we can predict
+pred_train = predict(cvboost, n.trees=500)
+rmse_train_cv_boost = sqrt(mean((pred_train - training$review_scores_rating)^2)); rmse_train_cv_boost
+
+R2(pred_train,training$review_scores_rating,form="traditional")
+MAE(pred_train,training$review_scores_rating)
+mltools::mse(pred_train,training$review_scores_rating)
+
+pred = predict(cvboost, newdata = test, n.trees = 500)
+rmse_cv_boost = sqrt(mean((pred - test$review_scores_rating)^2)); rmse_cv_boost
+R2(pred,test$review_scores_rating,form="traditional")
+MAE(pred,test$review_scores_rating)
+mltools::mse(pred,test$review_scores_rating)
